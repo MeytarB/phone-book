@@ -6,9 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PhoneBookController struct {
-	Service PhoneBookService
-}
+
 
 func New(service PhoneBookService) PhoneBookController {
 	return PhoneBookController{
@@ -24,28 +22,48 @@ func (pbc *PhoneBookController) AddContact(ctx *gin.Context) {
 	err:= pbc.Service.AddContact(&contact)
 	if err != nil{
 		ctx.JSON((http.StatusBadGateway), gin.H{"message": err.Error()})
+		return
 	}
 	ctx.JSON(http.StatusOK ,"ok")
 }
 
 func (pbc *PhoneBookController) EditContact(ctx *gin.Context) {
 
-	ctx.JSON(200,"ok")
+	ctx.JSON(http.StatusOK ,"ok")
 }
 
-func (pbc *PhoneBookController) FindAllContacts(ctx *gin.Context) {
+func (pbc *PhoneBookController) ShowAllContacts(ctx *gin.Context) {
+	contacts, err := pbc.Service.ShowAllContacts()
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
+	}
 
-	ctx.JSON(200,"ok")
+	ctx.JSON(http.StatusOK , contacts)
 }
 
-func (pbc *PhoneBookController) FindUserByName(ctx *gin.Context) {
-
-	ctx.JSON(200,"ok")
+func (pbc *PhoneBookController) FindContactByName(ctx *gin.Context) {
+	firstName := ctx.Query("firstname")
+	lastName := ctx.Query("lastname")
+	contact, err := pbc.Service.FindContactByName(firstName, lastName)
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, contact)
 }
 
 func (pbc *PhoneBookController) DeleteContact(ctx *gin.Context) {
+	firstName := ctx.Query("firstname")
+	lastName := ctx.Query("lastname")
+	err := pbc.Service.DeleteContact(firstName, lastName)
+	
+	if err != nil {
+		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
+	}
 
-	ctx.JSON(200,"ok")
+	ctx.JSON(http.StatusOK ,"ok")
 }
 
 func (pbc *PhoneBookController) RegisterAllRoutes(rg *gin.RouterGroup){
@@ -54,8 +72,8 @@ func (pbc *PhoneBookController) RegisterAllRoutes(rg *gin.RouterGroup){
 	//api routes
 	phoneBookRoute.POST("/add", pbc.AddContact)
 	phoneBookRoute.PATCH("/edit", pbc.EditContact)
-	phoneBookRoute.GET("/find-all-contacts", pbc.FindAllContacts)
-	phoneBookRoute.GET("/find-by-name/:fullname", pbc.FindUserByName)
-	phoneBookRoute.DELETE("/delete/:fullname", pbc.DeleteContact)
+	phoneBookRoute.GET("/find-all-contacts", pbc.ShowAllContacts)
+	phoneBookRoute.GET("/find-by-name/", pbc.FindContactByName)
+	phoneBookRoute.DELETE("/delete", pbc.DeleteContact)
 
 }
