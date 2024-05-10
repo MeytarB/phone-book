@@ -1,1 +1,1 @@
-# phone-book
+This app is a phone book server
