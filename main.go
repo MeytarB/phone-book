@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -17,33 +16,30 @@ func NewPhonebookOwner(c *mongo.Client) *PhonebookOwner {
 	}
 }
 
-func (owner *PhonebookOwner) start(coll *mongo.Collection ) error {
+func (owner *PhonebookOwner) start(sp PhoneBookService) {
+	// This start function will add the phone owner details
+	// only in the first run, or if the user delete all contacts 
 
-	phoneBookcount, err := coll.CountDocuments(context.TODO(), bson.M{})
-    if err != nil {
-        return err
-    }
-
-	if phoneBookcount == 0 {
+	myContact, _ := sp.FindContactByName("my","phone")
+	if  myContact != nil {
+		return 
+	}
 	
-	myContact := ContactType{
+	myContact = &ContactType{
 		FirstName: "my",
 		LastName: "phone",
 		PhoneNumber: "0501234567",
 		Address: "my-address",
 	}
-	_, err := coll.InsertOne(context.TODO(), myContact)
-    if err != nil {
-        return err
-    }
-    fmt.Println("Contact inserted successfully.")
-	}
-    return nil
+
+	if sp.AddContact(myContact) == nil{
+    
+    	fmt.Println("my contact details were inserted successfully.")
+	} 
 }
 
-
 func main(){
-
+//creating the mongo connection
 	ctx := context.TODO()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://meytar:phonebook@localhost:27017/"))
@@ -52,20 +48,17 @@ func main(){
 	}
 	
 	fmt.Println("mongo connection is on")
-	
+	// creating the client and initialize its number	
 	phoneOwner := NewPhonebookOwner(client)
-	
 	mdbColl := phoneOwner.client.Database("phonebooks").Collection("myphonebook")
-	
 	phoneBookService:= NewPhoneBookService(mdbColl,ctx)
-
 	phoneBookController := New(phoneBookService)
+	phoneOwner.start(phoneBookService)
 
-	phoneOwner.start(mdbColl)
+	//creating the server and routes
 	server := gin.Default()
 	basepath := server.Group("/app")
 	phoneBookController.RegisterAllRoutes(basepath)
 	server.Run(":3000")
-
 
 }

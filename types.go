@@ -26,7 +26,9 @@ type PhoneBookService interface {
 	EditContact(*ContactType) error
 	ShowAllContacts() ([]*ContactType, error)
 	FindContactByName(string, string) (*ContactType, error)
+	FindContactByNumber(string) (*ContactType, error)
 	DeleteContact(string, string) error
+	DeleteAll() error
 }
 
 type ServiceParams struct {
