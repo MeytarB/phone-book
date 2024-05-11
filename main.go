@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"phone-book/logger"
+	"phone-book/service"
+	"phone-book/controller"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
 
 func NewPhonebookOwner(c *mongo.Client) *PhonebookOwner {
 	return &PhonebookOwner{
@@ -27,20 +28,22 @@ func (owner *PhonebookOwner) start(sp PhoneBookService) {
 
 	if sp.AddContact(myContact) == nil{
     
-    	fmt.Println("my contact details were inserted successfully.")
+    	logger.Logger.Info("my contact details were inserted successfully.")
 	} 
 }
 
 func main(){
 //creating the mongo connection
-	ctx := context.TODO()
+ctx := context.TODO()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://meytar:phonebook@localhost:27017/"))
 	if err != nil {
 		panic(err)
 	}
+	defer client.Disconnect(ctx)
 	
-	fmt.Println("mongo connection is on")
+	logger.Logger.Info("mongo connection is on")
+
 	// creating the client and initialize its number	
 	phoneOwner := NewPhonebookOwner(client)
 	mdbColl := phoneOwner.client.Database("phonebooks").Collection("myphonebook")

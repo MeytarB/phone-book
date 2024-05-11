@@ -56,8 +56,11 @@ endpoint: DELETE http://localhost:3000/app/phonebook/delete-all
 result: error if there was
 note: be careful from that one - it will delete your details too
 
+base path: 
+http://localhost:3000/app
 
-Some important extra notes :
+
+Some important extra notes : 
 * when starting the app for the first time , you will get your phone details under the name "my phone" 
 
 * This phone book will help you not calling accidently a person you didnt mean to call :) since it doesn't allow:
@@ -66,5 +69,4 @@ Some important extra notes :
 
 
 in order to run the program , run in bash:
-docker build -t phone-book-app .
-docker run -p 3000:3000 phone-book-app
+docker-compose up --build

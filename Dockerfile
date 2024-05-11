@@ -3,6 +3,8 @@ FROM golang:1.22.3 AS builder
 ARG APP=/phone-book
 WORKDIR ${APP}
 
+ENV GOPROXY=direct
+
 COPY go.mod go.sum ./
 RUN go mod download
 # Copy all source code to the container
