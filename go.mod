@@ -1,4 +1,4 @@
-module phone-book
+module github.com/MeytarB/phone-book
 
 go 1.22.3
 
