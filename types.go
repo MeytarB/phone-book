@@ -23,8 +23,8 @@ type PhoneBookController struct {
 
 type PhoneBookService interface {
 	AddContact(*ContactType) error
-	EditContact(*ContactType) error
-	ShowAllContacts() ([]*ContactType, error)
+	EditContact(string, string, *ContactType) error
+	ShowAllContacts(int64) ([]*ContactType, error)
 	FindContactByName(string, string) (*ContactType, error)
 	FindContactByNumber(string) (*ContactType, error)
 	DeleteContact(string, string) error

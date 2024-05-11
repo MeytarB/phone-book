@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 
@@ -17,36 +19,98 @@ func NewPhoneBookService(coll *mongo.Collection, ctx context.Context) PhoneBookS
 	}
 }
 
-
-func (sp *ServiceParams) AddContact(newContact *ContactType) error {
+func (sp *ServiceParams) CheckIfContactExist(newContact *ContactType) error {
 	_ , err:= sp.FindContactByName(newContact.FirstName, newContact.LastName)
 	
 	//if the contact name already exists:
 	if err == nil{
-		err = errors.New("error: contact already exists")
+		err = errors.New("error: contact full name already exists")
+		return err
 	}
-// if it didnt find the required name in contacts - it will add it 
-	if err== mongo.ErrNoDocuments {
-	_, err = sp.coll.InsertOne(sp.ctx, newContact)
-	fmt.Println("contact was added successfully!")
-}
 
-//TODO - add a check for the phone number
+	_ , err= sp.FindContactByNumber(newContact.PhoneNumber)
+	
+	//if the contact number already exists:
+	if err == nil{
+		err = errors.New("error: contact number already exists")
+		return err
+	}
 	
 	return err
 }
 
 
-func (sp *ServiceParams) EditContact(contact *ContactType) error {
+
+func (sp *ServiceParams) AddContact(newContact *ContactType) error {
 	
+	err := sp.CheckIfContactExist(newContact)
+
+// if it didnt find the required name/number in contacts - it will add it 
+	if err== mongo.ErrNoDocuments {
+		_, err = sp.coll.InsertOne(sp.ctx, newContact)
+	
+		if err == nil{
+			fmt.Println("contact was added successfully!")
+		}
+	}
+	
+	return err
+}
+
+
+func (sp *ServiceParams) EditContact(firstName string ,lastName string , updatedContact *ContactType) error {
+
+	filter := bson.D{primitive.E{Key: "firstname", Value: firstName}, 
+			  primitive.E{Key: "lastname", Value: lastName}}
+
+	update := bson.D{primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "firstname", Value: updatedContact.FirstName}, 
+				primitive.E{Key: "lastname", Value: updatedContact.LastName},
+				primitive.E{Key: "phonenumber", Value: updatedContact.PhoneNumber},
+				primitive.E{Key: "address", Value: updatedContact.Address}}}}
+	
+	
+	// we will find the original contact
+	originalContact, err := sp.FindContactByName(firstName,lastName)
+	if err == mongo.ErrNoDocuments{
+		return err
+	}
+	// making sure that if the number is changed - the new one doesnt already exist
+	if updatedContact.PhoneNumber != originalContact.PhoneNumber{
+		_, err = sp.FindContactByNumber(updatedContact.PhoneNumber)
+		if err == nil{
+			err = errors.New("error: new phone number already exist, cannot update")
+			return err
+		}
+	}
+	
+	// making sure that if the name is changed - the new full name doesnt already exist
+	if updatedContact.FirstName != originalContact.FirstName || 
+	   updatedContact.LastName != originalContact.LastName {
+		_, err = sp.FindContactByName(updatedContact.FirstName, updatedContact.LastName)
+		if err == nil{
+			err = errors.New("error: new full name already exist, cannot update")
+			return err
+		}
+	}
+
+	var result *mongo.UpdateResult
+	result, err = sp.coll.UpdateOne(sp.ctx, filter, update)
+	if result == nil{
+		return err
+	}
+
 	return nil
 }
 
 
-func (sp *ServiceParams) ShowAllContacts() ([]*ContactType, error) {
+func (sp *ServiceParams) ShowAllContacts(page int64) ([]*ContactType, error) {
 	var results []*ContactType
+	paging := 10
+	startingPoint := int64(paging) * (page -1)
 	filter := bson.M{}
-	cursor, err := sp.coll.Find(sp.ctx, filter)
+	//find the 10 first results from the page we want
+	cursor, err := sp.coll.Find(sp.ctx, filter, options.Find().SetSkip(startingPoint).SetLimit(int64(paging)))
     
 	if err != nil {
         return nil, err

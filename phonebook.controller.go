@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,11 +30,15 @@ func (pbc *PhoneBookController) AddContact(ctx *gin.Context) {
 
 func (pbc *PhoneBookController) EditContact(ctx *gin.Context) {
 	var contact ContactType
+	firstName := ctx.Params.ByName("firstname")
+	lastName := ctx.Params.ByName("lastname")
+
 	if err := ctx.ShouldBindJSON(&contact); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	err := pbc.Service.EditContact(&contact)
+	err := pbc.Service.EditContact(firstName, lastName, &contact)
+
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
@@ -42,7 +47,10 @@ func (pbc *PhoneBookController) EditContact(ctx *gin.Context) {
 }
 
 func (pbc *PhoneBookController) ShowAllContacts(ctx *gin.Context) {
-	contacts, err := pbc.Service.ShowAllContacts()
+	page := ctx.Params.ByName("page")
+	pageNumber, _ := strconv.Atoi(page)
+	contacts, err := pbc.Service.ShowAllContacts(int64(pageNumber))
+
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
@@ -103,8 +111,8 @@ func (pbc *PhoneBookController) RegisterAllRoutes(rg *gin.RouterGroup){
 	phoneBookRoute := rg.Group("/phonebook")
 	//api routes
 	phoneBookRoute.POST("/add", pbc.AddContact)
-	phoneBookRoute.PATCH("/edit", pbc.EditContact)
-	phoneBookRoute.GET("/find-all-contacts", pbc.ShowAllContacts)
+	phoneBookRoute.PATCH("/edit/:firstname/:lastname", pbc.EditContact)
+	phoneBookRoute.GET("/find-all-contacts/:page", pbc.ShowAllContacts)
 	phoneBookRoute.GET("/find-by-name/", pbc.FindContactByName)
 	phoneBookRoute.GET("/find-by-number/", pbc.FindContactByNumber)
 	phoneBookRoute.DELETE("/delete-contact", pbc.DeleteContact)

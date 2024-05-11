@@ -17,15 +17,8 @@ func NewPhonebookOwner(c *mongo.Client) *PhonebookOwner {
 }
 
 func (owner *PhonebookOwner) start(sp PhoneBookService) {
-	// This start function will add the phone owner details
-	// only in the first run, or if the user delete all contacts 
-
-	myContact, _ := sp.FindContactByName("my","phone")
-	if  myContact != nil {
-		return 
-	}
 	
-	myContact = &ContactType{
+	myContact := &ContactType{
 		FirstName: "my",
 		LastName: "phone",
 		PhoneNumber: "0501234567",
@@ -60,5 +53,7 @@ func main(){
 	basepath := server.Group("/app")
 	phoneBookController.RegisterAllRoutes(basepath)
 	server.Run(":3000")
+
+	
 
 }
