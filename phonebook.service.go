@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,18 +18,17 @@ func NewPhoneBookService(coll *mongo.Collection, ctx context.Context) PhoneBookS
 	}
 }
 
+
 func (sp *ServiceParams) CheckIfContactExist(newContact *ContactType) error {
-	_ , err:= sp.FindContactByName(newContact.FirstName, newContact.LastName)
-	
 	//if the contact name already exists:
+	_ , err:= sp.FindContactByName(newContact.FirstName, newContact.LastName)
 	if err == nil{
 		err = errors.New("error: contact full name already exists")
 		return err
 	}
 
-	_ , err= sp.FindContactByNumber(newContact.PhoneNumber)
-	
 	//if the contact number already exists:
+	_ , err= sp.FindContactByNumber(newContact.PhoneNumber)
 	if err == nil{
 		err = errors.New("error: contact number already exists")
 		return err
@@ -40,20 +38,12 @@ func (sp *ServiceParams) CheckIfContactExist(newContact *ContactType) error {
 }
 
 
-
 func (sp *ServiceParams) AddContact(newContact *ContactType) error {
-	
 	err := sp.CheckIfContactExist(newContact)
-
-// if it didnt find the required name/number in contacts - it will add it 
 	if err== mongo.ErrNoDocuments {
-		_, err = sp.coll.InsertOne(sp.ctx, newContact)
-	
-		if err == nil{
-			fmt.Println("contact was added successfully!")
-		}
+		_, err = sp.coll.InsertOne(sp.ctx, newContact)	
 	}
-	
+
 	return err
 }
 
@@ -82,8 +72,7 @@ func (sp *ServiceParams) EditContact(firstName string ,lastName string , updated
 			err = errors.New("error: new phone number already exist, cannot update")
 			return err
 		}
-	}
-	
+	}	
 	// making sure that if the name is changed - the new full name doesnt already exist
 	if updatedContact.FirstName != originalContact.FirstName || 
 	   updatedContact.LastName != originalContact.LastName {

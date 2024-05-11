@@ -65,4 +65,6 @@ Some important extra notes :
 2. 2 contacts with the same full name.
 
 
-
+in order to run the program , run in bash:
+docker build -t phone-book-app .
+docker run -p 3000:3000 phone-book-app
