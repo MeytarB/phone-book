@@ -22,8 +22,8 @@ type MongoService struct {
 
 func Init() service.PhoneBookService {
 	ctx := context.TODO()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://meytar:phonebook@localhost:27017/"))
+//todo - change localhost to db
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://meytar:phonebook@db:27017/"))
 	if err != nil {
 		panic(err)
 	}
@@ -37,9 +37,9 @@ func Init() service.PhoneBookService {
 }
 
 
-func (ms *MongoService) AddContact(newContact *types.ContactType) error {
+func (ms *MongoService) AddContact(newContact *types.Contact) error {
 	if !ms.isValidNumber(newContact.PhoneNumber){
-		return errors.New("error: not a valid number")
+		return errors.New(string(types.ValidNumberError))
 	}
 	err := ms.checkIfContactExist(newContact)
 	if err== mongo.ErrNoDocuments {
@@ -50,7 +50,7 @@ func (ms *MongoService) AddContact(newContact *types.ContactType) error {
 }
 
 
-func (ms *MongoService) EditContact(firstName string ,lastName string , updatedContact *types.ContactType) error {
+func (ms *MongoService) EditContact(firstName string ,lastName string , updatedContact *types.Contact) error {
 
 	filter := bson.D{primitive.E{Key: "firstname", Value: firstName}, 
 			  primitive.E{Key: "lastname", Value: lastName}}
@@ -62,7 +62,7 @@ func (ms *MongoService) EditContact(firstName string ,lastName string , updatedC
 				primitive.E{Key: "address", Value: updatedContact.Address}}}}
 	
 	if !ms.isValidNumber(updatedContact.PhoneNumber){
-		return errors.New("error: not a valid number")
+		return errors.New(string(types.ValidNumberError))
 	}
 	// we will find the original contact
 	originalContact, err := ms.FindContactByName(firstName,lastName)
@@ -73,7 +73,7 @@ func (ms *MongoService) EditContact(firstName string ,lastName string , updatedC
 	if updatedContact.PhoneNumber != originalContact.PhoneNumber{
 		_, err = ms.FindContactByNumber(updatedContact.PhoneNumber)
 		if err == nil{
-			err = errors.New("error: new phone number already exist, cannot update")
+			err = errors.New(string(types.DuplicateNumberError))
 			return err
 		}
 	}	
@@ -82,7 +82,7 @@ func (ms *MongoService) EditContact(firstName string ,lastName string , updatedC
 	   updatedContact.LastName != originalContact.LastName {
 		_, err = ms.FindContactByName(updatedContact.FirstName, updatedContact.LastName)
 		if err == nil{
-			err = errors.New("error: new full name already exist, cannot update")
+			err = errors.New(string(types.DuplicateNameError))
 			return err
 		}
 	}
@@ -97,8 +97,8 @@ func (ms *MongoService) EditContact(firstName string ,lastName string , updatedC
 }
 
 
-func (ms *MongoService) ShowAllContacts(page int64) ([]*types.ContactType, error) {
-	var results []*types.ContactType
+func (ms *MongoService) ShowAllContacts(page int64) ([]*types.Contact, error) {
+	var results []*types.Contact
 	paging := 10
 	startingPoint := int64(paging) * (page -1)
 	filter := bson.M{}
@@ -111,7 +111,7 @@ func (ms *MongoService) ShowAllContacts(page int64) ([]*types.ContactType, error
 
 	//go over all results and decoding it into the empty array that was declared before
 	for cursor.Next(ms.ctx) {
-		var contact types.ContactType
+		var contact types.Contact
 		err := cursor.Decode(&contact)
 		if err != nil {
 			return nil, err
@@ -128,16 +128,16 @@ func (ms *MongoService) ShowAllContacts(page int64) ([]*types.ContactType, error
 	return results, nil
 }
 
-func (ms *MongoService) FindContactByName(firstName string, lastName string) (*types.ContactType, error) {
-	var result *types.ContactType	
+func (ms *MongoService) FindContactByName(firstName string, lastName string) (*types.Contact, error) {
+	var result *types.Contact	
 	filter := bson.M{"firstname": firstName, "lastname": lastName}
 	err := ms.coll.FindOne(context.Background(), filter).Decode(&result)
 	
 	return result, err
 }
 
-func (ms *MongoService) FindContactByNumber(phoneNumber string) (*types.ContactType, error) {
-	var result *types.ContactType	
+func (ms *MongoService) FindContactByNumber(phoneNumber string) (*types.Contact, error) {
+	var result *types.Contact	
 	filter := bson.M{"phonenumber": phoneNumber}
 	err := ms.coll.FindOne(context.Background(), filter).Decode(&result)
 	
@@ -149,7 +149,7 @@ func (ms *MongoService) DeleteContact(firstName string, lastName string) error {
 	result, _ := ms.coll.DeleteOne(ms.ctx, filter)
 
 	if result.DeletedCount != 1 {
-		return errors.New("error: contact was not found")
+		return errors.New(string(types.NumberNotFoundError))
 	}
 	return nil
 }
@@ -158,11 +158,7 @@ func (ms *MongoService) DeleteAll() error {
 	filter := bson.M{}
 	_ , err := ms.coll.DeleteMany(ms.ctx,filter)
 
-	if err != nil {
-		return errors.New("error: contacts were not deleted")
-	}
-
-	return nil
+	return err;
 }
 
 
@@ -172,7 +168,7 @@ func (ms *MongoService) isValidNumber(phoneNumber string) bool {
 }
 
 
-func (ms *MongoService) checkIfContactExist(newContact *types.ContactType) error {
+func (ms *MongoService) checkIfContactExist(newContact *types.Contact) error {
 	//if the contact name already exists:
 	_ , err:= ms.FindContactByName(newContact.FirstName, newContact.LastName)
 	if err == nil{
@@ -192,7 +188,7 @@ func (ms *MongoService) checkIfContactExist(newContact *types.ContactType) error
 
 
 func (ms *MongoService) addOwnerDetails() {
-	myContact := &types.ContactType{
+	myContact := &types.Contact{
 		FirstName: "my",
 		LastName: "phone",
 		PhoneNumber: "0501234567",

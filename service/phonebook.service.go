@@ -5,11 +5,23 @@ import (
 )
 
 type PhoneBookService interface {
-	AddContact(*types.ContactType) error
-	EditContact(string, string, *types.ContactType) error
-	ShowAllContacts(int64) ([]*types.ContactType, error)
-	FindContactByName(string, string) (*types.ContactType, error)
-	FindContactByNumber(string) (*types.ContactType, error)
+	AddContact(*types.Contact) error
+	EditContact(string, string, *types.Contact) error
+	ShowAllContacts(int64) ([]*types.Contact, error)
+	FindContactByName(string, string) (*types.Contact, error)
+	FindContactByNumber(string) (*types.Contact, error)
 	DeleteContact(string, string) error
 	DeleteAll() error
 }
+
+
+
+func IsUserError(err error) bool {
+	allUserErrors := types.AllUserErrors()
+	for _, ue := range allUserErrors {
+		if string(ue) == err.Error() {
+		return true
+		}
+	}
+	return false
+}							

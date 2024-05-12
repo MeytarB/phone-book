@@ -2,7 +2,8 @@ package controller
 
 import (
 	"net/http"
-	
+
+	"github.com/MeytarB/phone-book/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +13,10 @@ func (pbc *PhoneBookController) DeleteContact(ctx *gin.Context) {
 	err := pbc.service.DeleteContact(firstName, lastName)
 	
 	if err != nil {
+		if service.IsUserError(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
