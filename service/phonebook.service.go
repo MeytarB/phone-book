@@ -15,7 +15,6 @@ type PhoneBookService interface {
 }
 
 
-
 func IsUserError(err error) bool {
 	allUserErrors := types.AllUserErrors()
 	for _, ue := range allUserErrors {

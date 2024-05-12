@@ -22,7 +22,6 @@ type MongoService struct {
 
 func Init() service.PhoneBookService {
 	ctx := context.TODO()
-//todo - change localhost to db
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://meytar:phonebook@db:27017/"))
 	if err != nil {
 		panic(err)
@@ -30,7 +29,6 @@ func Init() service.PhoneBookService {
 
 	mdbColl := client.Database("phonebooks").Collection("myphonebook")
 	phoneOwner := &MongoService{client: client ,coll: mdbColl, ctx: ctx }
-	
 	phoneOwner.addOwnerDetails()
 	
 	return phoneOwner
@@ -41,6 +39,7 @@ func (ms *MongoService) AddContact(newContact *types.Contact) error {
 	if !ms.isValidNumber(newContact.PhoneNumber){
 		return errors.New(string(types.ValidNumberError))
 	}
+
 	err := ms.checkIfContactExist(newContact)
 	if err== mongo.ErrNoDocuments {
 		_, err = ms.coll.InsertOne(ms.ctx, newContact)	
@@ -51,7 +50,6 @@ func (ms *MongoService) AddContact(newContact *types.Contact) error {
 
 
 func (ms *MongoService) EditContact(firstName string ,lastName string , updatedContact *types.Contact) error {
-
 	filter := bson.D{primitive.E{Key: "firstname", Value: firstName}, 
 			  primitive.E{Key: "lastname", Value: lastName}}
 
